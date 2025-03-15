@@ -147,26 +147,26 @@
 
 <body>
     @php
-    $regularAttendances = collect();
-    $specialAttendances = collect();
-    
-    foreach ($attendancesBySection as $section => $attendances) {
-        foreach ($attendances as $attendance) {
-            $majorType = '';
-            
-            if ($attendance['type'] === 'regular') {
-                $majorType = $attendance['data']->class->major->major_type ?? 'N';
-            } else {
-                $majorType = $attendance['data']->classes->major->major_type ?? 'N';
-            }
-            
-            if ($majorType === 'S') {
-                $specialAttendances->push($attendance);
-            } else {
-                $regularAttendances->push($attendance);
+        $regularAttendances = collect();
+        $specialAttendances = collect();
+
+        foreach ($attendancesBySection as $section => $attendances) {
+            foreach ($attendances as $attendance) {
+                $majorType = '';
+
+                if ($attendance['type'] === 'regular') {
+                    $majorType = $attendance['data']->class->major->major_type ?? 'N';
+                } else {
+                    $majorType = $attendance['data']->classes->major->major_type ?? 'N';
+                }
+
+                if ($majorType === 'S') {
+                    $specialAttendances->push($attendance);
+                } else {
+                    $regularAttendances->push($attendance);
+                }
             }
         }
-    }
     @endphp
 
     <!-- โครงการปกติ แสดงเฉพาะเมื่อมีข้อมูลโครงการปกติ -->
@@ -336,8 +336,9 @@
         <div class="clear"></div>
         <div style="margin-top: 20px;">
             <p>หมายเหตุ : ขอเบิกจ่ายเพียง
-                {{ number_format(($regularLectureHoursSum + $regularLabHoursSum) * $compensationRates['regularLecture'], 2) }}
-                บาท</p>
+                {{ number_format($actualRegularPay, 2) }}
+                บาท
+            </p>
         </div>
 
         <div class="signature-section">
@@ -537,7 +538,8 @@
                         <td colspan="6"><strong>รวมเป็นเงินทั้งสิ้น</strong></td>
                         <td class="text-end">
                             <strong>{{ number_format($isFixedPayment ? $specialPay : ($specialLectureHoursSum + $specialLabHoursSum) * $compensationRates['specialLecture'], 2) }}
-                                บาท</strong></td>
+                                บาท</strong>
+                        </td>
                         <td><strong>=
                                 {{ \App\Helpers\ThaiNumberHelper::convertToText(number_format($isFixedPayment ? $specialPay : ($specialLectureHoursSum + $specialLabHoursSum) * $compensationRates['specialLecture'], 2, '.', '')) }}ถ้วน
                                 =</strong></td>
@@ -548,9 +550,12 @@
 
         <div class="clear"></div>
         <div style="margin-top: 20px;">
-            <p>หมายเหตุ : ขอเบิกจ่ายเพียง
-                {{ number_format($isFixedPayment ? $specialPay : ($specialLectureHoursSum + $specialLabHoursSum) * $compensationRates['specialLecture'], 2) }}
-                บาท</p>
+            <div style="margin-top: 20px;">
+                <p>หมายเหตุ : ขอเบิกจ่ายเพียง
+                    {{ number_format($actualSpecialPay, 2) }}
+                    บาท
+                </p>
+            </div>
         </div>
 
         <div class="signature-section">

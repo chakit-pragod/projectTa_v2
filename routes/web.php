@@ -132,6 +132,9 @@ Route::middleware(['auth', 'user-access:admin'])->group(function () {
         Route::delete('/compensation/{id}/cancel', [CourseBudgetController::class, 'cancelTransaction'])->name('compensation.cancel');
     });
 
+    Route::get('/admin/debug', 'AdminController@debugInfo')->name('admin.debug');
+
+
     Route::get('/admin/compensation/preview', [CourseBudgetController::class, 'showCompensationPreview'])
         ->name('admin.compensation-preview');
         

@@ -150,6 +150,8 @@
         $specialData = [];
         $regularTotalAmount = 0;
         $specialTotalAmount = 0;
+        $actualRegularTotal = isset($actualRegularPay) ? $actualRegularPay : 0;
+        $actualSpecialTotal = isset($actualSpecialPay) ? $actualSpecialPay : 0;
 
         // กรองข้อมูลโครงการปกติ
         foreach ($attendancesBySection as $section => $attendances) {
@@ -227,8 +229,16 @@
                     }
                 }
 
-                // คำนวณจำนวนเงินจากชั่วโมงรวม
-                $amount = $totalHours * $compensationRates['specialLecture'];
+                // กำหนดค่า rate และ amount ตามประเภทการจ่าย
+                $rate = $compensationRates['specialLecture'];
+                $amount = $totalHours * $rate;
+
+                // ถ้าเป็นแบบเหมาจ่าย
+                if ($isFixedPayment && isset($fixedAmount) && $fixedAmount > 0) {
+                    $rate = 'เหมาจ่าย ' . number_format($fixedAmount, 0) . ' บาท';
+                    $amount = $fixedAmount;
+                }
+
                 $specialTotalAmount += $amount;
 
                 // เพิ่มข้อมูล
@@ -236,9 +246,10 @@
                     'section' => $section,
                     'type' => 'พิเศษ',
                     'hours' => $totalHours,
-                    'rate' => $compensationRates['specialLecture'],
+                    'rate' => $rate,
                     'amount' => $amount,
                     'subject_id' => $subjectId,
+                    'is_fixed' => $isFixedPayment,
                 ];
             }
         }
@@ -312,29 +323,34 @@
                             @endif
                         </td>
                         <td class="center">{{ number_format($data['hours'], 0) }}</td>
-                        <td class="center">{{ number_format($data['rate'], 0) }}</td>
+                        <td class="center">
+                            {{ is_numeric($data['rate']) ? number_format($data['rate'], 0) : $data['rate'] }}</td>
                         <td class="center">{{ number_format($data['amount'], 0) }}</td>
-                        <td class="center">{{ number_format($data['amount'], 0) }}</td>
+                        <td class="center">
+                            @if (isset($transaction) && $transaction)
+                                {{ number_format($actualRegularTotal, 0) }}
+                            @else
+                                {{ number_format($data['amount'], 0) }}
+                            @endif
+                        </td>
                         <td></td>
                         <td></td>
                         <td>{{ $data['subject_id'] }}</td>
                     </tr>
                 @endforeach
 
-                @if ($hasRegularData)
-                    <tr>
-                        <td colspan="6" class="center"><strong>รวมเบิกเป็นเงินทั้งสิ้น</strong></td>
-                        <td colspan="4" class="center"><strong>{{ number_format($regularTotalAmount, 2) }}</strong>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2" class="center"><strong>(ตัวอักษร)</strong></td>
-                        <td colspan="8" class="center"><strong>
-                                {{ \App\Helpers\ThaiNumberHelper::convertToText(number_format($regularTotalAmount, 2, '.', '')) }}ถ้วน
-                            </strong>
-                        </td>
-                    </tr>
-                @endif
+                <tr>
+                    <td colspan="6" class="center"><strong>รวมเบิกเป็นเงินทั้งสิ้น</strong></td>
+                    <td colspan="4" class="center"><strong>{{ number_format($actualRegularTotal, 2) }}</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="center"><strong>(ตัวอักษร)</strong></td>
+                    <td colspan="8" class="center"><strong>
+                            {{ \App\Helpers\ThaiNumberHelper::convertToText(number_format($actualRegularTotal, 2, '.', '')) }}ถ้วน
+                        </strong>
+                    </td>
+                </tr>
             </tbody>
         </table>
 
@@ -385,8 +401,11 @@
                 (<span
                     style="display: inline-block; width: 10px;">{{ $student->degree_level == 'master' || $student->degree_level == 'doctoral' ? '/' : ' ' }}</span>)
                 บัณฑิตศึกษา <br>
-                (<span style="display: inline-block; width: 10px;">/</span>) ภาคปกติ
-                (<span style="display: inline-block; width: 10px;"> </span>) โครงการพิเศษ
+                (<span style="display: inline-block; width: 10px;"> </span>) ภาคปกติ
+                (<span style="display: inline-block; width: 10px;">/</span>) โครงการพิเศษ
+                @if ($isFixedPayment)
+                    <br><strong>(แบบเหมาจ่าย)</strong>
+                @endif
             </h3>
         </div>
 
@@ -422,30 +441,57 @@
                                 ป.ตรี
                             @endif
                         </td>
-                        <td class="center">{{ number_format($data['hours'], 0) }}</td>
-                        <td class="center">{{ number_format($data['rate'], 0) }}</td>
+                        <td class="center">
+                            @if ($isFixedPayment)
+                                <span
+                                    style="text-decoration: line-through;">{{ number_format($data['hours'], 0) }}</span>
+                            @else
+                                {{ number_format($data['hours'], 0) }}
+                            @endif
+                        </td>
+                        <td class="center">
+                            {{ is_numeric($data['rate']) ? number_format($data['rate'], 0) : $data['rate'] }}</td>
                         <td class="center">{{ number_format($data['amount'], 0) }}</td>
-                        <td class="center">{{ number_format($data['amount'], 0) }}</td>
+                        <td class="center">
+                            @if (isset($transaction) && $transaction)
+                                {{ number_format($transaction->actual_amount, 2) }}
+                            @else
+                                {{ number_format($specialPay, 2) }}
+                            @endif
+                        </td>
                         <td></td>
                         <td></td>
-                        <td>{{ $data['subject_id'] }}</td>
+                        <td>
+                            {{ $data['subject_id'] }}
+                            @if ($isFixedPayment)
+                            @endif
+                        </td>
                     </tr>
                 @endforeach
 
-                @if ($hasRegularData)
-                    <tr>
-                        <td colspan="6" class="center"><strong>รวมเบิกเป็นเงินทั้งสิ้น</strong></td>
-                        <td colspan="4" class="center"><strong>{{ number_format($regularTotalAmount, 2) }}</strong>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2" class="center"><strong>(ตัวอักษร)</strong></td>
-                        <td colspan="8" class="center"><strong>
-                                {{ \App\Helpers\ThaiNumberHelper::convertToText(number_format($regularTotalAmount, 2, '.', '')) }}ถ้วน
-                            </strong>
-                        </td>
-                    </tr>
-                @endif
+                <tr>
+                    <td colspan="6" class="center"><strong>รวมเบิกเป็นเงินทั้งสิ้น</strong></td>
+                    <td colspan="4" class="center"><strong>
+                            @if (isset($transaction) && $transaction)
+                                {{ number_format($transaction->actual_amount, 2) }}
+                            @else
+                                {{ number_format($specialPay, 2) }}
+                            @endif
+                        </strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="center"><strong>(ตัวอักษร)</strong></td>
+                    <td colspan="8" class="center">
+                        <strong>
+                            {{ \App\Helpers\ThaiNumberHelper::convertToText(
+                                isset($transaction) && $transaction 
+                                    ? number_format($transaction->actual_amount, 2, '.', '') 
+                                    : number_format($specialPay, 2, '.', '')
+                            ) }}ถ้วน
+                        </strong>
+                    </td>
+                </tr>
             </tbody>
         </table>
 

@@ -402,6 +402,8 @@ class CourseBudgetController extends Controller
         $startDate = Carbon::createFromFormat('Y-m', $yearMonth)->startOfMonth();
         $endDate = Carbon::createFromFormat('Y-m', $yearMonth)->endOfMonth();
 
+
+        
         // ดึงข้อมูลการสอนปกติ
         $regularTeachings = Teaching::with(['attendance', 'class.major'])
             ->whereHas('attendance', function ($query) use ($studentId) {
@@ -426,6 +428,12 @@ class CourseBudgetController extends Controller
             ->pluck('extra_teaching_id')
             ->toArray();
 
+            $extraAttendances = ExtraAttendances::with(['classes.major'])
+            ->where('student_id', $studentId)
+            ->where('approve_status', 'A')
+            ->whereBetween('start_work', [$startDate, $endDate])
+            ->get();
+
         $extraTeachingsCompensation = ExtraTeaching::with(['class.major'])
             ->whereIn('extra_class_id', $extraTeachingIds)
             ->whereBetween('class_date', [$startDate, $endDate])
@@ -436,6 +444,35 @@ class CourseBudgetController extends Controller
         $regularLabHours = 0;
         $specialLectureHours = 0;
         $specialLabHours = 0;
+
+        foreach ($extraAttendances as $teaching) {
+            $hours = $teaching->duration / 60;
+            
+            // ตรวจสอบว่ามีข้อมูล major และ class_type
+            if (!$teaching->classes || !$teaching->classes->major) {
+                Log::warning("ExtraAttendance ID {$teaching->id} missing classes or major data");
+                continue;
+            }
+            
+            $majorType = $teaching->classes->major->major_type ?? 'N';
+            $classType = $teaching->class_type === 'L' ? 'LAB' : 'LECTURE';
+            
+            // คำนวณชั่วโมงตามประเภท
+            if ($majorType === 'N') {
+                if ($classType === 'LECTURE') {
+                    $regularLectureHours += $hours;
+                } else {
+                    $regularLabHours += $hours;
+                }
+            } else {
+                if ($classType === 'LECTURE') {
+                    $specialLectureHours += $hours;
+                } else {
+                    $specialLabHours += $hours;
+                }
+            }
+        }
+        
 
         foreach ($regularTeachings as $teaching) {
             $startTime = Carbon::parse($teaching->start_time);
