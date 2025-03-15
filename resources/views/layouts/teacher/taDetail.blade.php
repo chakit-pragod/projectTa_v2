@@ -188,11 +188,17 @@
                                                                         type="checkbox" name="extra_attendances[]"
                                                                         value="{{ $attendance['original_id'] }}"
                                                                         id="attendance-{{ $index }}">
-                                                                @else
-                                                                    <!-- Normal/Extra Teaching Attendance -->
+                                                                @elseif ($attendance['type'] === 'สอนชดเชย')
+                                                                    <!-- Extra Teaching -->
                                                                     <input class="form-check-input attendance-checkbox"
                                                                         type="checkbox" name="normal_attendances[]"
-                                                                        value="{{ $attendance['id'] }}"
+                                                                        value="extra-{{ $attendance['original_id'] }}"
+                                                                        id="attendance-{{ $index }}">
+                                                                @else
+                                                                    <!-- Normal Teaching -->
+                                                                    <input class="form-check-input attendance-checkbox"
+                                                                        type="checkbox" name="normal_attendances[]"
+                                                                        value="{{ $attendance['original_id'] }}"
                                                                         id="attendance-{{ $index }}">
                                                                 @endif
                                                                 <label class="form-check-label"
