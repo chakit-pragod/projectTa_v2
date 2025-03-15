@@ -83,7 +83,7 @@
                             <!-- แสดงสถานะการอนุมัติ -->
                             @if ($isMonthApproved)
                                 <div class="alert alert-success mb-3">
-                                    การลงเวลาของเดือนนี้ได้รับการอนุมัติแล้ว
+                                    การลงเวลาของเดือนนี้ในรายวิชาของท่านได้รับการอนุมัติแล้ว
                                     @if ($approvalNote)
                                         <br>หมายเหตุการอนุมัติ: {{ $approvalNote }}
                                     @endif
@@ -191,8 +191,7 @@
                                                                 @elseif ($attendance['type'] === 'สอนชดเชย')
                                                                     <input class="form-check-input attendance-checkbox"
                                                                         type="checkbox" name="normal_attendances[]"
-                                                                        value="{{ $attendance['original_id'] }}"
-                                                                        {{-- ใช้ original_id แทน extra- --}}
+                                                                        value="extra-{{ $attendance['original_id'] }}"
                                                                         id="attendance-{{ $index }}">
                                                                 @else
                                                                     <!-- Normal Teaching -->
