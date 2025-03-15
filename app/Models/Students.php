@@ -46,8 +46,36 @@ class Students extends Model
         return $this->hasMany(Students::class);
     }
 
-    public function courseTas() 
+    public function courseTas()
     {
         return $this->hasMany(CourseTas::class, 'student_id', 'id');
+    }
+
+
+
+    public function compensationTransactions()
+    {
+        return $this->hasMany(CompensationTransaction::class, 'student_id', 'id');
+    }
+
+
+    public function getTotalCompensationForCourse($courseId)
+    {
+        return $this->compensationTransactions()
+            ->where('course_id', $courseId)
+            ->sum('actual_amount');
+    }
+
+
+    public function getMonthlyCompensation($yearMonth, $courseId = null)
+    {
+        $query = $this->compensationTransactions()
+            ->where('month_year', $yearMonth);
+
+        if ($courseId) {
+            $query->where('course_id', $courseId);
+        }
+
+        return $query->sum('actual_amount');
     }
 }

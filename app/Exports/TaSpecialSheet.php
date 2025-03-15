@@ -15,6 +15,8 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use App\Models\CompensationRate;
+use Illuminate\Support\Facades\Log;
 
 class TaSpecialSheet implements FromCollection, WithTitle, ShouldAutoSize, WithStyles, WithColumnWidths, WithEvents
 {
@@ -76,7 +78,13 @@ class TaSpecialSheet implements FromCollection, WithTitle, ShouldAutoSize, WithS
                 ? $attendance['data']->start_time
                 : $attendance['data']->start_work;
         });
+$isGraduate = in_array($this->student->degree_level, ['master', 'doctoral', 'graduate']);
+    $isFixedPayment = $isGraduate && ($this->compensation['specialLectureHours'] > 0 || $this->compensation['specialLabHours'] > 0);
 
+    if ($isFixedPayment) {
+        $fixedAmount = $this->getFixedCompensationRate('special', $this->student->degree_level);
+        $this->compensation['specialPay'] = $fixedAmount ?? 4000; // ค่าเริ่มต้น 4,000 บาท
+    }
         foreach ($flatAttendances as $attendance) {
             $date = $attendance['type'] === 'regular'
                 ? Carbon::parse($attendance['data']->start_time)->format('d-m-y')
@@ -208,6 +216,22 @@ class TaSpecialSheet implements FromCollection, WithTitle, ShouldAutoSize, WithS
 
         return $data;
     }
+
+    private function getFixedCompensationRate($teachingType, $degreeLevel)
+{
+    try {
+        $fixedRate = CompensationRate::where('teaching_type', $teachingType)
+            ->where('degree_level', $degreeLevel)
+            ->where('is_fixed_payment', true)
+            ->where('status', 'active')
+            ->first();
+
+        return $fixedRate ? $fixedRate->fixed_amount : null;
+    } catch (\Exception $e) {
+        Log::error('Error getting fixed compensation rate: ' . $e->getMessage());
+        return null;
+    }
+}
 
     public function convertNumberToThaiBaht($number)
     {

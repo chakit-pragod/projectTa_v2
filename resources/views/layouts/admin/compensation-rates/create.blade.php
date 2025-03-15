@@ -38,10 +38,34 @@
                                 <option value="LAB">ปฏิบัติการ</option>
                             </select>
                         </div>
+
+                        <div class="mb-3">
+                            <label for="degree_level" class="form-label">ระดับการศึกษา <span class="text-danger">*</span></label>
+                            <select name="degree_level" id="degree_level" class="form-select" required>
+                                <option value="undergraduate">ระดับปริญญาตรี</option>
+                                <option value="graduate">ระดับบัณฑิตศึกษา</option>
+                            </select>
+                        </div>
                         
                         <div class="mb-3">
-                            <label for="rate_per_hour" class="form-label">อัตราต่อชั่วโมง (บาท) <span class="text-danger">*</span></label>
-                            <input type="number" min="0" step="0.01" name="rate_per_hour" id="rate_per_hour" class="form-control" required>
+                            <label for="is_fixed_payment" class="form-label">รูปแบบการจ่าย</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_fixed_payment" name="is_fixed_payment" value="1">
+                                <label class="form-check-label" for="is_fixed_payment">
+                                    จ่ายแบบเหมาจ่ายรายเดือน
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="fixed_amount_container" style="display: none;">
+                            <label for="fixed_amount" class="form-label">จำนวนเงินเหมาจ่าย (บาท)</label>
+                            <input type="number" min="0" step="0.01" name="fixed_amount" id="fixed_amount" class="form-control">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="rate_per_hour" class="form-label">อัตราต่อชั่วโมง (บาท)</label>
+                            <input type="number" min="0" step="0.01" name="rate_per_hour" id="rate_per_hour" class="form-control">
+                            <small class="form-text text-muted">จำเป็นต้องกรอกถ้าไม่ได้เลือกแบบเหมาจ่าย</small>
                         </div>
                         
                         <div class="mb-3">
@@ -62,4 +86,31 @@
         </div>
     </div>
 </div>
+
+<script>
+   document.addEventListener('DOMContentLoaded', function() {
+    const isFixedPayment = document.getElementById('is_fixed_payment');
+    const fixedAmountContainer = document.getElementById('fixed_amount_container');
+    const ratePerHourContainer = document.getElementById('rate_per_hour').parentElement;
+    const ratePerHourInput = document.getElementById('rate_per_hour');
+    const fixedAmountInput = document.getElementById('fixed_amount');
+    
+    isFixedPayment.addEventListener('change', function() {
+        if (this.checked) {
+            fixedAmountContainer.style.display = 'block';
+            ratePerHourContainer.style.display = 'none';
+            // ยกเลิก required สำหรับ rate_per_hour และเพิ่ม required สำหรับ fixed_amount
+            ratePerHourInput.removeAttribute('required');
+            fixedAmountInput.setAttribute('required', 'required');
+        } else {
+            fixedAmountContainer.style.display = 'none';
+            ratePerHourContainer.style.display = 'block';
+            // เพิ่ม required กลับคืนสำหรับ rate_per_hour และยกเลิก required สำหรับ fixed_amount
+            ratePerHourInput.setAttribute('required', 'required');
+            fixedAmountInput.removeAttribute('required');
+        }
+    });
+});
+</script>
+
 @endsection

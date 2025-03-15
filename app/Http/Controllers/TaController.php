@@ -464,7 +464,7 @@ class TaController extends Controller
 
             if ($allTeachings->isEmpty()) {
                 session()->flash('info', 'ยังไม่มีข้อมูลการสอนสำหรับรายวิชานี้');
-                return view('layouts.ta.teaching', ['teachings' => []]);
+                return redirect()->back();
             }
 
             // 5. ดึงข้อมูลที่เกี่ยวข้อง

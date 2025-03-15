@@ -47,6 +47,8 @@ class ExcelHelper
     }
     
 
+    
+
     public static function fillAttendanceData(Worksheet $sheet, $attendances, $student, $startRow = 9)
     {
         $row = $startRow;

@@ -10,7 +10,7 @@ class Courses extends Model
     use HasFactory;
 
     protected $primaryKey = 'course_id';
-    public $incrementing = false; 
+    public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -72,5 +72,16 @@ class Courses extends Model
     public function teacherRequests()
     {
         return $this->hasMany(TeacherRequest::class, 'course_id', 'course_id');
+    }
+
+    public function budget()
+    {
+        return $this->hasOne(CourseBudget::class, 'course_id', 'course_id');
+    }
+
+
+    public function compensationTransactions()
+    {
+        return $this->hasMany(CompensationTransaction::class, 'course_id', 'course_id');
     }
 }

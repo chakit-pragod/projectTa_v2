@@ -420,7 +420,9 @@ class TeacherController extends Controller
             $selectedDate = \Carbon\Carbon::createFromFormat('Y-m', $selectedYearMonth);
 
             // ดึงข้อมูลการลงเวลาทั้งหมดของนักศึกษาที่เลือก
-            $attendances = Attendances::where('student_id', $student->id)->get();
+            $attendances = Attendances::whereHas('teaching', function ($query) use ($ta) {
+                $query->where('class_id', 'LIKE', $ta->course_id . '%');
+            })->where('student_id', $student->id)->get();
 
             // แยกการลงเวลาปกติและการลงเวลาการสอนชดเชย
             $regularAttendances = $attendances->where('is_extra', false)->where('extra_teaching_id', null);
@@ -574,6 +576,7 @@ class TeacherController extends Controller
         }
     }
 
+    // branch backupBefore
     public function approveMonthlyAttendance(Request $request, $ta_id)
     {
         try {
@@ -622,26 +625,11 @@ class TeacherController extends Controller
                                 'approve_note' => $approveNote
                             ]);
                             $extraTeachingCount++;
-                        }
-                    } else {
-                        // กรณี Teaching ปกติ
-                        $attendance = Attendances::where('teaching_id', $id)
-                            ->where('student_id', $ta->student_id)
-                            ->where(function ($query) {
-                                $query->whereNull('approve_status')
-                                    ->orWhere('approve_status', '!=', 'a');
-                            })
-                            ->first();
-
-                        if ($attendance) {
-                            $attendance->update([
-                                'approve_status' => 'a',
-                                'approve_at' => now(),
-                                'approve_user_id' => auth()->id(),
-                                'approve_note' => $approveNote
-                            ]);
+                        } else {
                             $normalCount++;
                         }
+                    } else {
+                        Log::warning('No attendance found for ID: ' . $id);
                     }
                 }
 
@@ -688,10 +676,132 @@ class TeacherController extends Controller
                 return back()->with('error', 'เกิดข้อผิดพลาดในการอนุมัติ: ' . $e->getMessage());
             }
         } catch (\Exception $e) {
-            Log::error($e->getMessage());
+            Log::error('Exception in approveMonthlyAttendance: ' . $e->getMessage());
             return back()->with('error', 'เกิดข้อผิดพลาดในการประมวลผล: ' . $e->getMessage());
         }
     }
+
+    // branch edit-calculate
+    // public function approveMonthlyAttendance(Request $request, $ta_id)
+    // {
+    //     try {
+    //         $yearMonth = $request->input('year_month');
+    //         $approveNote = $request->input('approve_note');
+    //         $selectedDate = \Carbon\Carbon::createFromFormat('Y-m', $yearMonth);
+    //         $ta = CourseTas::with('student')->findOrFail($ta_id);
+
+    //         // รับค่า checkbox ที่เลือก
+    //         $normalAttendanceIds = $request->input('normal_attendances', []);
+    //         $extraAttendanceIds = $request->input('extra_attendances', []);
+
+    //         // บันทึก log ข้อมูลที่รับมา
+    //         Log::debug('Approving monthly attendance', [
+    //             'student_id' => $ta->student_id,
+    //             'normal_attendances' => $normalAttendanceIds,
+    //             'extra_attendances' => $extraAttendanceIds
+    //         ]);
+
+    //         // ตรวจสอบว่ามีการเลือกรายการหรือไม่
+    //         if (empty($normalAttendanceIds) && empty($extraAttendanceIds)) {
+    //             return back()->with('error', 'กรุณาเลือกรายการที่ต้องการอนุมัติ');
+    //         }
+
+    //         DB::beginTransaction();
+
+    //         try {
+    //             $normalCount = 0;
+    //             $extraTeachingCount = 0;
+    //             $extraAttendanceCount = 0;
+
+    //             // อนุมัติการลงเวลาปกติและการสอนชดเชย
+    //             foreach ($normalAttendanceIds as $id) {
+    //                 // ใช้เงื่อนไขที่ยืดหยุ่นในการค้นหา attendance record
+    //                 $attendance = Attendances::where(function($query) use ($id) {
+    //                         // ค้นหาด้วย teaching_id หรือ extra_teaching_id
+    //                         $query->where('teaching_id', $id)
+    //                               ->orWhere('extra_teaching_id', $id);
+    //                     })
+    //                     ->where('student_id', $ta->student_id)
+    //                     ->where(function ($query) {
+    //                         $query->whereNull('approve_status')
+    //                             ->orWhere('approve_status', '!=', 'a');
+    //                     })
+    //                     ->first();
+
+    //                 if ($attendance) {
+    //                     Log::debug('Found attendance record: ' . $attendance->id . ', is_extra: ' . $attendance->is_extra);
+
+    //                     $attendance->update([
+    //                         'approve_status' => 'a',
+    //                         'approve_at' => now(),
+    //                         'approve_user_id' => auth()->id(),
+    //                         'approve_note' => $approveNote
+    //                     ]);
+
+    //                     if ($attendance->is_extra) {
+    //                         $extraTeachingCount++;
+    //                     } else {
+    //                         $normalCount++;
+    //                     }
+    //                 } else {
+    //                     Log::warning('No attendance found for ID: ' . $id);
+    //                 }
+    //             }
+
+    //             // อนุมัติการลงเวลาพิเศษ (Extra Attendances)
+    //             foreach ($extraAttendanceIds as $id) {
+    //                 $extraAttendance = ExtraAttendances::where('id', $id)
+    //                     ->where('student_id', $ta->student_id)
+    //                     ->where(function ($query) {
+    //                         $query->whereNull('approve_status')
+    //                             ->orWhere('approve_status', '!=', 'a');
+    //                     })
+    //                     ->first();
+
+    //                 if ($extraAttendance) {
+    //                     $extraAttendance->update([
+    //                         'approve_status' => 'a',
+    //                         'approve_at' => now(),
+    //                         'approve_user_id' => auth()->id(),
+    //                         'approve_note' => $approveNote
+    //                     ]);
+    //                     $extraAttendanceCount++;
+    //                 }
+    //             }
+
+    //             // ตรวจสอบว่ามีการอนุมัติข้อมูลหรือไม่
+    //             $totalApproved = $normalCount + $extraTeachingCount + $extraAttendanceCount;
+
+    //             Log::debug('Approval count summary:', [
+    //                 'normal' => $normalCount,
+    //                 'extraTeaching' => $extraTeachingCount,
+    //                 'extraAttendance' => $extraAttendanceCount,
+    //                 'total' => $totalApproved
+    //             ]);
+
+    //             if ($totalApproved == 0) {
+    //                 DB::rollBack();
+    //                 return back()->with('error', 'ไม่สามารถอนุมัติรายการที่เลือกได้');
+    //             }
+
+    //             // บันทึกข้อมูลลงฐานข้อมูล
+    //             DB::commit();
+
+    //             // คำนวณจำนวนรายการที่อนุมัติแต่ละประเภท
+    //             $message = "อนุมัติรายการที่เลือกเรียบร้อยแล้ว ";
+    //             $message .= "(ปกติ: {$normalCount}, สอนชดเชย: {$extraTeachingCount}, งานพิเศษ: {$extraAttendanceCount})";
+
+    //             return back()->with('success', $message);
+    //         } catch (\Exception $e) {
+    //             DB::rollBack();
+    //             Log::error('Error during approval: ' . $e->getMessage());
+    //             return back()->with('error', 'เกิดข้อผิดพลาดในการอนุมัติ: ' . $e->getMessage());
+    //         }
+    //     } catch (\Exception $e) {
+    //         Log::error('Exception in approveMonthlyAttendance: ' . $e->getMessage());
+    //         return back()->with('error', 'เกิดข้อผิดพลาดในการประมวลผล: ' . $e->getMessage());
+    //     }
+    // }
 
     public function subjectTeacher()
     {

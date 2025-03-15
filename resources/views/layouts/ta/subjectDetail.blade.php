@@ -30,20 +30,21 @@
                             <div class="menu">
                                 <form action="{{ route('layout.ta.teaching', ['id' => $courseTaClass->class->class_id]) }}" 
                                     method="GET" class="d-block">
-                                    <div class="mb-3">
-                                        <button type="submit" class="btn btn-primary">+ ลงเวลา</button>
-                                        <a href="#" class="btn btn-success">ดาวน์โฟลดเอกสารสรุปภาระงาน</a>
-                                        <a href="#" class="btn btn-success">ดาวน์โหลดเอกสาร</a>
+                                    <div class="col-12">
+                                        <div class="dropdown col-8 flex no-wrap">
+                                            <select name="month" class="form-select" aria-label="Default select example">
+                                                @forelse($months as $month)
+                                                    <option value="{{ $month['value'] }}">{{ $month['name'] }}</option>
+                                                @empty
+                                                    <option value="" disabled>ไม่พบข้อมูลเดือน</option>
+                                                @endforelse
+                                            </select>
+                                        </div>
+                                        <div class="mt-3 col-4">
+                                            <button type="submit" class="btn btn-primary">+ ลงเวลา</button>
+                                        </div>
                                     </div>
-                                    <div class="dropdown">
-                                        <select name="month" class="form-select" aria-label="Default select example">
-                                            @forelse($months as $month)
-                                                <option value="{{ $month['value'] }}">{{ $month['name'] }}</option>
-                                            @empty
-                                                <option value="" disabled>ไม่พบข้อมูลเดือน</option>
-                                            @endforelse
-                                        </select>
-                                    </div>
+                                    
                                 </form>
                             </div>
                     </div>

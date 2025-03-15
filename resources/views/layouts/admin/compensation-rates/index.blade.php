@@ -22,7 +22,9 @@
                                 <tr>
                                     <th>ประเภทการสอน</th>
                                     <th>ประเภทคลาส</th>
-                                    <th>อัตราต่อชั่วโมง (บาท)</th>
+                                    <th>ระดับการศึกษา</th>
+                                    <th>รูปแบบการจ่าย</th>
+                                    <th>อัตราค่าตอบแทน</th>
                                     <th>สถานะ</th>
                                     <th>อัปเดตล่าสุด</th>
                                     <th>การจัดการ</th>
@@ -45,7 +47,27 @@
                                                 ปฏิบัติการ
                                             @endif
                                         </td>
-                                        <td>{{ number_format($rate->rate_per_hour, 2) }}</td>
+                                        <td>
+                                            @if($rate->degree_level == 'undergraduate')
+                                                ปริญญาตรี
+                                            @else
+                                                บัณฑิตศึกษา
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($rate->is_fixed_payment)
+                                                เหมาจ่ายรายเดือน
+                                            @else
+                                                รายชั่วโมง
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($rate->is_fixed_payment)
+                                                {{ number_format($rate->fixed_amount, 2) }} บาท/เดือน
+                                            @else
+                                                {{ number_format($rate->rate_per_hour, 2) }} บาท/ชั่วโมง
+                                            @endif
+                                        </td>
                                         <td>
                                             @if($rate->status == 'active')
                                                 <span class="badge bg-success">ใช้งาน</span>
@@ -60,7 +82,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center">ไม่พบข้อมูลอัตราค่าตอบแทน</td>
+                                        <td colspan="8" class="text-center">ไม่พบข้อมูลอัตราค่าตอบแทน</td>
                                     </tr>
                                 @endforelse
                             </tbody>

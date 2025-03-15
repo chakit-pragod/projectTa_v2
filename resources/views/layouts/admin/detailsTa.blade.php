@@ -62,8 +62,7 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                <a href="{{ route('admin.ta.profile', $ta->student->id) }}"
-                                                    class="btn btn-primary btn-sm">
+                                                <a href="{{ route('admin.ta.profile', ['student_id' => $ta->student->id, 'course_id' => $ta->course_id]) }}" class="btn btn-primary btn-sm">
                                                     ตรวจสอบข้อมูล
                                                 </a>
                                             </td>
