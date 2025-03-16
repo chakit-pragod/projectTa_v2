@@ -484,10 +484,17 @@ class CourseBudgetController extends Controller
         $degreeLevel = $student->degree_level ?? 'undergraduate';
 
         // ดึงอัตราค่าตอบแทนที่เกี่ยวข้อง
-        $regularLectureRate = $this->getCompensationRate('regular', 'LECTURE', $degreeLevel);
-        $regularLabRate = $this->getCompensationRate('regular', 'LAB', $degreeLevel);
-        $specialLectureRate = $this->getCompensationRate('special', 'LECTURE', $degreeLevel);
-        $specialLabRate = $this->getCompensationRate('special', 'LAB', $degreeLevel);
+        // solution 1
+        // $regularLectureRate = $this->getCompensationRate('regular', 'LECTURE', $degreeLevel);
+        // $regularLabRate = $this->getCompensationRate('regular', 'LAB', $degreeLevel);
+        // $specialLectureRate = $this->getCompensationRate('special', 'LECTURE', $degreeLevel);
+        // $specialLabRate = $this->getCompensationRate('special', 'LAB', $degreeLevel);
+
+        // solution 2
+        $regularLectureRate = $this->getCompensationRate('regular', 'LECTURE', $student->degree_level ?? 'undergraduate');
+        $regularLabRate = $this->getCompensationRate('regular', 'LAB', $student->degree_level ?? 'undergraduate');
+        $specialLectureRate = $this->getCompensationRate('special', 'LECTURE', $student->degree_level ?? 'undergraduate');
+        $specialLabRate = $this->getCompensationRate('special', 'LAB', $student->degree_level ?? 'undergraduate');
 
         // คำนวณค่าตอบแทน
         $regularLecturePay = $regularLectureHours * $regularLectureRate;
@@ -575,6 +582,12 @@ class CourseBudgetController extends Controller
      */
     private function getCompensationRate($teachingType, $classType, $degreeLevel)
     {
+        if ($degreeLevel === 'bachelor') {
+            $degreeLevel = 'undergraduate';
+        } elseif (in_array($degreeLevel, ['master', 'doctoral'])) {
+            $degreeLevel = 'graduate';
+        }
+
         $rate = CompensationRate::where('teaching_type', $teachingType)
             ->where('class_type', $classType)
             ->where('degree_level', $degreeLevel)
